@@ -51,8 +51,6 @@ public class BDD {
     
     int num_vertices = 0;
     
-    final static boolean MEASURE_TIME = true;
-
     /**
      * Obtains the variables used in a boolean formula.
      */
@@ -412,6 +410,7 @@ public class BDD {
         this.is_reduced = true;
         
         t.end();
+        t.show();
     }
 
     
@@ -434,6 +433,7 @@ public class BDD {
         TimeMeasurer t = new TimeMeasurer("apply");
         BDD _bdd = this.apply(bdd, op);
         t.end();
+        t.show();
         return _bdd;
     }
 

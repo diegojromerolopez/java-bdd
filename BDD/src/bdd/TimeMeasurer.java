@@ -9,6 +9,7 @@ package bdd;
  * @author diegoj
  */
 public class TimeMeasurer {
+    public final static boolean MEASURE_TIME = false;
     public String context = "";
     public long startTime = 0;
     public  long endTime = 0;
@@ -36,16 +37,20 @@ public class TimeMeasurer {
     
     public TimeMeasurer(String context){
         this.context = context;
-        this.startTime = System.nanoTime();
+        if(MEASURE_TIME)
+            this.startTime = System.nanoTime();
     }
     
     public long end(){
-        this.endTime = System.nanoTime();
-        this.elapsedTime = this.endTime - this.startTime;
+        if(MEASURE_TIME){
+            this.endTime = System.nanoTime();
+            this.elapsedTime = this.endTime - this.startTime;
+        }
         return this.elapsedTime;
     }
     
     public void show(){
-        System.out.println(context+" "+this.getElapsedTimeAsHumanText());
+        if(MEASURE_TIME)
+            System.out.println(context+" "+this.getElapsedTimeAsHumanText());
     }
 }
