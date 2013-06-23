@@ -92,6 +92,7 @@ public class ProbComputator {
           in.close();
          }catch (Exception e){//Catch exception if any
              System.err.println("Error: " + e.getMessage());
+             e.printStackTrace();
         }
       
         ArrayList<String> variables = new ArrayList<>();

@@ -163,6 +163,7 @@ public class BDD {
         System.out.println(this.variables);
         System.out.println("-------------------------------------------------");
         System.out.println("pos.\tindex\tv_name\tlow\thigh\tmark");
+        System.out.flush();
         for (Vertex v : this.vertices){
             String v_name = null;
             //System.out.println(v);
@@ -175,6 +176,7 @@ public class BDD {
             String high_id = v.high!=null?Integer.toString(v.high.id):"null";
 
             System.out.println(Integer.toString(v.id)+"\t"+Integer.toString(v.i)+"\t"+v_name+"\t"+low_id+"\t"+high_id+"\t"+Boolean.toString(v.visited));
+            System.out.flush();
         }
         System.out.println("-------------------------------------------------");
         System.out.println("");
@@ -268,7 +270,7 @@ public class BDD {
         // Everty other vertex is in its position
         for (int i=2; i<this.vertices.size(); i++){
             Vertex v = this.vertices.get(i);
-            v.i = v.index - 1;
+            v.i = v.index;
         }
 
         this.unvisitVertices();
@@ -322,7 +324,7 @@ public class BDD {
                 
                 if(!v.isLeaf())
                 {
-                    levels.get(v.index-1).add(v);
+                    levels.get(v.index).add(v);
                     //System.out.println( levels.get(v.index-1).size() );
                     this.run(v.low, levels);
                     this.run(v.high, levels);
@@ -398,7 +400,8 @@ public class BDD {
                 result.add(x);
 
                 // Update references
-                if (!x.isLeaf()){
+                if (!x.isLeaf())
+                {
                     // Here's the core of the reduction method
                     // If there is a redundant node whose id is equal to one of its descendants' id
                     // we get the descendant, so we skip the redundant node
@@ -407,15 +410,10 @@ public class BDD {
                 }
             }
 
-
-            //
-
         }
         // Update reference to root vertex (alwayes the last entry in result)
         this.root = result.get(result.size()-1);
         this.vertices = result;
-        //for(Vertex v : this.vertices)
-        //    System.out.println(v.id);
         
         this.is_reduced = true;
         
@@ -648,7 +646,7 @@ public class BDD {
 
     /**************************************************************************/
     /**************************************************************************/
-    /* Algorithms of R. Heradio D. Amorós */
+    /* Algorithms of R. Heradio & D. Amorós */
 
     /**
      * Algorithm 2: P(ψ)
