@@ -1,0 +1,4 @@
+
+Tener un present_variables que indique qué variables están presentes
+recorrer la recursividad sólo por aquellas variables que estén presentes
+y hacer el miniárbol BDD.
