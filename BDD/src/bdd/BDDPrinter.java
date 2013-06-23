@@ -15,6 +15,10 @@ import java.io.File;
  */
 public class BDDPrinter {
 
+    /* Output file type */
+    static String FILE_TYPE = "gif";
+    
+    /** BDD tree to print */
     BDD bdd = null;
     
     class Node {
@@ -37,7 +41,7 @@ public class BDDPrinter {
          */
         public String setName(String pathName) {
             if (v.index != -1) {
-                this.name = bdd.variable_names.get(v.index - 1) + " (" + pathName + ")";
+                this.name = bdd.variables.get(v.index) + " (" + pathName + ")";
                 return this.name;
             }
             if (v.isLeaf()) {
@@ -59,7 +63,9 @@ public class BDDPrinter {
             // Obtains the node variable name
             // If it's not a leaf, get the variable name associated
             if (!v.isLeaf()) {
-                this.label = bdd.variable_names.get(v.index - 1);
+                System.out.println(v.index+" "+bdd.variables.get(v.index - 1));
+                System.out.flush();
+                this.label = bdd.variables.get(v.index - 1);
                 return this.label;
             }
             // If it's a leaf, get 1/0 from True/False, resp.
@@ -74,8 +80,8 @@ public class BDDPrinter {
     /**  Generates the graph */
     private void _create_graph(GraphViz graph, Node n, String pathName) {
         // Traverse all nodes and creates a dot graph"""
-        System.out.println(n);
-        System.out.println(n.v);
+        //System.out.println(n);
+        //System.out.println(n.v);
         if (n.v.index != -1) {
             this._create_graph(graph, n.low, pathName + "L");
             this._create_graph(graph, n.high, pathName + "H");
@@ -97,7 +103,7 @@ public class BDDPrinter {
     /**
      * Prints the BDD.
      */
-    public void print() {
+    public void print(String path) {
 
         ArrayList<Node> nodes = new ArrayList<Node>();
        
@@ -135,8 +141,9 @@ public class BDDPrinter {
         //gv.addln("A -> C;");
         gv.addln(gv.end_graph());
         System.out.println(gv.getDotSource());
-
-        String type = "gif";
+        
+        String type = FILE_TYPE;
+//      String type = "gif";
 //      String type = "dot";
 //      String type = "fig";    // open with xfig
 //      String type = "pdf";
@@ -144,9 +151,12 @@ public class BDDPrinter {
 //      String type = "svg";    // open with inkscape
 //      String type = "png";
 //      String type = "plain";
-        File out = new File("./" + this.bdd.name + "." + type);   // Linux
+        if(!path.contains("\\"+ FILE_TYPE))
+            path += "."+FILE_TYPE;
+        File out = new File(path);   // Linux
         gv.writeGraphToFile(gv.getGraph(gv.getDotSource(), type), out);
     }
+    
     
     public BDDPrinter(BDD bdd){
         this.bdd = bdd;

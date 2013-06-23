@@ -137,20 +137,23 @@ public class ProbComputator {
           BufferedReader br = new BufferedReader(new InputStreamReader(in));
           String line;
 
-          int formulaIndex = 0;
+          int formulaIndex = 1;
           
           //Read File Line By Line
-          while ((line = br.readLine()) != null)
+          while ((line = br.readLine()) != null && line.length()>0)
           {
+              if(line.length()==0)
+                  break;
               //System.out.println("Otra línea");
-              if (line.charAt(0)!='c'){
+              if (line.charAt(0)!='c')
+              {
                   if(line.charAt(0)=='p')
                   {
                       String[] content = line.split(" ");
                       numVariables = Integer.parseInt(content[2]);
                       numClausules = Integer.parseInt(content[3]);
                       for(int i=1; i<=numVariables; i++){
-                        variables.add("x"+i);
+                        variables.add("x"+i+"_");
                         //System.out.println(variables.get(i-1));
                       }
                   }
@@ -161,16 +164,17 @@ public class ProbComputator {
                     formulaI = formulaI.replaceAll("-", " !");
                     formulaI = formulaI.replaceAll("  ", " ");
                     formulaI += " ";
-                    System.out.println(formulaI);
-                    formulaI = formulaI.replaceAll("(\\d+)", "x$1");
+                    //System.out.println(formulaI);
+                    formulaI = formulaI.replaceAll("(\\d+)", "x$1_");
                     formulaI = formulaI.trim();
-                    System.out.println(formulaI);
+                    //System.out.println(formulaI);
                     BDD bddI = new BDD(formulaI, variables);
                     //System.out.println("patas");
-                    if(formulaIndex==0)
+                    if(formulaIndex==1)
                         bdd = bddI;
                     else
                         bdd = bdd.apply(bddI,"and");
+                    //System.out.println("-- > " + formulaIndex + " cláusulas de "+ numClausules);
                     // Avanzamos la CNF
                     formulaIndex++;
                     //System.out.println(formulaIndex+"/"+numClausules);
@@ -180,7 +184,8 @@ public class ProbComputator {
           //Close the input stream
           in.close();
          }catch (Exception e){//Catch exception if any
-             System.err.println("Error: " + e.getMessage());
+             System.err.println("Error: "+e.getMessage());
+             e.printStackTrace();
         }
         return bdd;    
     }
@@ -214,8 +219,25 @@ public class ProbComputator {
      */
     protected static void printDimacsFile(String filename){
         BDD bdd = ProbComputator.loadDimacsFile(filename);
+        System.out.println("PRINT DIMACS FILE");
+        System.out.flush();
+        System.out.println(bdd.vertices);
         BDDPrinter printer = new BDDPrinter(bdd);
-        printer.print();
+        printer.print("./"+filename);
+    }
+    
+     /**
+     * Creates a BDD from a formula.
+     * This method DOES NOT creates a BDD at once, it DOES use the operator apply of the BDD.
+     * See http://people.sc.fsu.edu/~jburkardt/data/cnf/cnf.html for a dimacs format description.
+     * @see BDD
+     * @param String fmla Logic formula.
+     * @param ArrayList<String> variables Variables used in the formula. Note that this parameter gives the order of them.
+     */
+    protected static void printFmla(String fmla, ArrayList<String>variables){
+        BDD bdd = new BDD(fmla, variables);
+        BDDPrinter printer = new BDDPrinter(bdd);
+        printer.print("./"+bdd.name);
     }
     
     /**
@@ -267,9 +289,15 @@ public class ProbComputator {
                 runFormula(args[1],args[2].split(","));
                 break;
             case "--print":
-                System.out.println(args.length);
+                //System.out.println(args.length);
+                //System.out.println(args[2]);
                 if (args.length == 3 && (args[1].equals("dimacs") || args[1].equals("dimacsfile"))){
                     printDimacsFile(args[2]);
+                    return;
+                }
+                else if(args.length == 4 && args[1].equals("fmla")){
+                    ArrayList<String> variables = new ArrayList<String>( Arrays.asList(args[3].split(",\\s*") ));
+                    printFmla(args[2], variables);
                 }
         }
         ProbComputator.initEndTime();

@@ -8,7 +8,6 @@ import java.util.*;
 import bdd.Util.*;
 import java.util.regex.*;
 import org.mvel2.MVEL;
-import graphvizjava.GraphViz;
 
 /**
  * ROBDD based in the text An Introduction to Binary Decision Diagrams by Henrik Reif Andersen
@@ -18,8 +17,20 @@ import graphvizjava.GraphViz;
 public class BDD {
 
     //! Function variable names (used to construct the dot graph)
-    ArrayList<String> variable_names;
-
+    ArrayList<String> variables;
+    
+    //! Position of each variable in the variables array.
+    HashMap<String,Integer> variable_position;
+    
+    /** Variables that are present in the function */
+    HashMap<Integer,Boolean> variable_existence;
+    
+    /** Variables that exists in the boolean function */
+    ArrayList<String> present_variables;
+    
+    /** Variable indices that exists in the boolean function */
+    ArrayList<Integer> present_variable_indices;
+    
     //! Name of the boolean function (defaults to function.func_name if that exists)
     String name = null;
 
@@ -37,8 +48,28 @@ public class BDD {
 
     //! Vertices in an array
     ArrayList<Vertex> vertices;
-
     
+    int num_vertices = 0;
+    
+    final static boolean MEASURE_TIME = true;
+
+    /**
+     * Obtains the variables used in a boolean formula.
+     */
+    protected static HashMap<String,Integer> countVariableUsesInFunction(String function){
+        String[] props = function.trim().replaceAll("!","").split("\\s+");
+        HashMap<String,Integer> variables = new HashMap<String,Integer>();
+        for(String p : props){
+            if(!p.equals("||") && !p.equals("&&")){
+                if(!variables.containsKey(p))
+                    variables.put(p, 0);    
+                variables.put(p, variables.get(p)+1);
+            }
+        }
+        return variables;
+    }
+    
+
     /**
      * Evaluate the function inside the BDD (in its variable function).
      * It uses as arguments of that function the boolean values in path.
@@ -49,32 +80,24 @@ public class BDD {
     protected static boolean evaluateFunction(BDD bdd, ArrayList<Boolean> path)
     {
         String function = bdd.function;
-        int path_size = path.size();
-        //System.out.println(function);
-        //function.replaceAll("x(\\d+)",bdd.variable_names.get("$1"));
-        Pattern pattern = Pattern.compile("x(\\d+)");
-        Matcher matcher = pattern.matcher(function);
-        //System.out.println(matcher.groupCount());
-        //int[] variableIndices = new int[matcher.groupCount()];
+        //System.out.println("evaluateFunction");
+        //System.out.println(path.toString());
+        //System.out.flush();
         int i = 0;
-        while(matcher.find())
+        for(Boolean b : path)
         {
-            String group = matcher.group().substring(1);
-            int variableIndex = Integer.parseInt(group)-1;
-            if(variableIndex < path_size){
-                String variable = bdd.variable_names.get(variableIndex);
-                String replacement = path.get(variableIndex)?"true":"false";
-                //System.out.println(variable +"="+replacement);
-                function = function.replaceAll(variable, replacement);
+            //System.out.println(b);
+            //System.out.flush();
+            if(b != null){
+                int variable_index = bdd.present_variable_indices.get(i);
+                String variable_name = bdd.variables.get(variable_index);
+                //System.out.println("Variable "+variable_name);
+                function = function.replaceAll(variable_name, b?"true":"false");
             }
             i++;
-            //System.out.println(group);
         }
-        //System.out.println("Función: "+bdd.function);
-        //System.out.println("Función final: "+function);
         return (Boolean)MVEL.eval(function);
     }
-
     
     /**
      * Evaluate the function given the values of the variables in path.
@@ -93,26 +116,35 @@ public class BDD {
      */
     private Vertex generateTreeFunction(ArrayList<Boolean> path){
             int path_len = path.size();
-            if (path_len<this.n)
+            //System.out.println(path.toString());
+            //System.out.println(path_len);
+            //System.out.flush();
+            if (path_len < this.present_variable_indices.size())
             {
-                //System.out.println(path);
+                //System.out.println(path.toString());
+                int variable_index = this.present_variable_indices.get(path_len);
+                //System.out.println("EXISTE "+ path_len +" "+ this.variables.get(variable_index));
+                //System.out.flush();
                 ArrayList<Boolean> path_low = new ArrayList<>(path);
                 path_low.add(false);
+                
                 Vertex v_low = this.generateTreeFunction(path_low);
-
                 ArrayList<Boolean> path_high = new ArrayList<>(path);
                 path_high.add(true);
                 Vertex v_high = this.generateTreeFunction(path_high);
                 //System.out.println("Parent of "+v_low.id+" y "+v_high.id);
                 // Create a new vertex
-                return new Vertex(path_len+1, v_low, v_high);
+                num_vertices++;
+                return new Vertex(variable_index, v_low, v_high);
             }
-            else if(path_len==this.n)
+            else if(path_len == this.present_variable_indices.size())
             {
                 // reached leafes
                 boolean value = this.evaluate(path);
+                num_vertices++;
                 return new Vertex(value);
             }
+            //System.out.println("PETANTE");
             return null;
      }
 
@@ -128,7 +160,7 @@ public class BDD {
         System.out.print("Vertices: ");
         System.out.println(this.vertices);
         System.out.print("Variables: ");
-        System.out.println(this.variable_names);
+        System.out.println(this.variables);
         System.out.println("-------------------------------------------------");
         System.out.println("pos.\tindex\tv_name\tlow\thigh\tmark");
         for (Vertex v : this.vertices){
@@ -136,8 +168,8 @@ public class BDD {
             //System.out.println(v);
             if(v.isLeaf()){
                 v_name = Boolean.toString(v.value);
-            } else if (v.i < this.variable_names.size()){
-                v_name = this.variable_names.get(v.i);
+            } else if (v.i < this.variables.size()){
+                v_name = this.variables.get(v.i);
             }
             String low_id = v.low!=null?Integer.toString(v.low.id):"null";
             String high_id = v.high!=null?Integer.toString(v.high.id):"null";
@@ -156,14 +188,49 @@ public class BDD {
      */
     BDD(String function_str, ArrayList<String> variables){
         this.function = function_str;
+        //System.out.println("función " + this.function);
+        //System.out.flush();
         this.name = function_str;
-        this.variable_names = variables;
+        this.variables = variables;
         this.n = variables.size();
+        HashMap<String,Integer> variable_position = new HashMap<String,Integer>();
+        for(int i=0; i<this.variables.size(); i++){
+            variable_position.put(this.variables.get(i), i);
+        }
+        // Not all variables are present in the formula
+        this.present_variables = new ArrayList<String>();
+        this.variable_existence = new HashMap<Integer,Boolean>();
+        this.present_variable_indices = new ArrayList<Integer>();
+        
+        for(int i=0; i<this.n; i++)
+        {
+            String v = this.variables.get(i);
+            this.variable_existence.put(i, Boolean.FALSE);
+            if(
+                    this.function.contains(v)
+              )
+            {
+                this.variable_existence.put(i, Boolean.TRUE);
+                this.present_variables.add(v);
+                this.present_variable_indices.add(i);
+            }
+        }
+        //System.out.flush();
+        //System.out.println("Variables " + this.variables);
+        //System.out.println("Variable existence " + this.variable_existence.toString());
+        //System.out.flush();
+        //ArrayList<String> _variables = (ArrayList<String>)this.variables.clone();
+        //this.n = this.present_variables.size();
+        // Generation of the BDD Tree
         ArrayList<Boolean> path = new ArrayList<>();
         this.root = this.generateTreeFunction(path);
-        //System.out.println("BDD Cnstructor");
+        //System.out.println("this.generateTreeFunction");
+        //System.out.flush();
+        //System.out.println("Hay " + this.num_vertices+ " vertices");
         // For our own safety, we reduce every BDD built
         this.reduce();
+        //System.out.println("Tenemos " + this.vertices.size()+" vértices reales");
+        //System.out.flush();
     }
 
     
@@ -247,22 +314,33 @@ public class BDD {
         class Traversor{
             public void run(Vertex v, ArrayList<ArrayList<Vertex>> levels)
             {
+                /*if(v.visited)
+                {
+                    System.out.println("Hemos ciclado");
+                }
+                v.visited = true;*/
+                
                 if(!v.isLeaf())
                 {
                     levels.get(v.index-1).add(v);
+                    //System.out.println( levels.get(v.index-1).size() );
                     this.run(v.low, levels);
                     this.run(v.high, levels);
                 }
-                else{
+                else
+                {
                     levels.get(levels.size()-1).add(v);
+                    //System.out.println( levels.size() );
                 }
             }
         }
         ArrayList<ArrayList<Vertex>> levels = new ArrayList<ArrayList<Vertex>>();
         for(int i=0; i<this.n+1; i++)
             levels.add(new ArrayList<Vertex>());
+
         Traversor traversor = new Traversor();
         traversor.run(this.root,levels);
+        
         return levels;
     }
 
@@ -271,17 +349,17 @@ public class BDD {
      */
     final public void reduce()
     {
+        TimeMeasurer t = new TimeMeasurer("reduce");
+        
         if (this.is_reduced)
             return;
 
         ArrayList<Vertex> result = new ArrayList<>();
         int nextid = 0;
-
         //Traverse tree, so that level[i] contains all vertices of level i
         ArrayList<ArrayList<Vertex>> levels = this.traverse();
         Collections.reverse(levels);
-        //System.out.println(levels);
-
+        
         // Bottom-up reduction
         for(ArrayList<Vertex> level : levels)
         {
@@ -336,8 +414,12 @@ public class BDD {
         // Update reference to root vertex (alwayes the last entry in result)
         this.root = result.get(result.size()-1);
         this.vertices = result;
+        //for(Vertex v : this.vertices)
+        //    System.out.println(v.id);
+        
         this.is_reduced = true;
-        //this.reset();
+        
+        t.end();
     }
 
     
@@ -357,7 +439,10 @@ public class BDD {
             op = new Implication();
         //System.out.println(op.getOp());
         //System.out.println("APPLY");
-        return this.apply(bdd, op);
+        TimeMeasurer t = new TimeMeasurer("apply");
+        BDD _bdd = this.apply(bdd, op);
+        t.end();
+        return _bdd;
     }
 
     
@@ -397,7 +482,7 @@ public class BDD {
                 // Check if v1 and v2 have already been calculated
                 String key = Integer.toString(v1.id) + " " + Integer.toString(v2.id);
                 if (cache.containsKey(key)){
-                    System.out.println(key+" "+cache.get(key));
+                    //System.out.println(key+" "+cache.get(key));
                     return cache.get(key);
                 }
 
@@ -410,9 +495,6 @@ public class BDD {
                     if(function.run(v1.value, v2.value))
                         return True;
                     return False;
-                   //u = new Vertex(function.run(v1.value,v2.value));
-                   //cache.put(key, u);
-                   //return u;
                 }
                 
                 int index = -1;
@@ -448,7 +530,7 @@ public class BDD {
         // First call
         String functionString = "("+this.function+") "+function.getOp()+" ("+bdd.function+")";
         //System.out.println(functionString);
-        BDD newBdd = new BDD(functionString, this.variable_names);
+        BDD newBdd = new BDD(functionString, this.variables);
         newBdd.n = this.n;
         Applicator applicator = new Applicator(cache);
         newBdd.root = applicator.run(this.root, bdd.root, function);
@@ -615,7 +697,7 @@ public class BDD {
         double prob_high = 0.0;
         //_bdd = bdd
         ArrayList<Vertex> bdd = this.vertices;
-        ArrayList<String> names = this.variable_names;
+        ArrayList<String> names = this.variables;
         // Avoid visited nodes
         Vertex w = bdd.get(v);
         bdd.get(v).visited = !bdd.get(v).visited;
