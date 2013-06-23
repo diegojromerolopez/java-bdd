@@ -144,7 +144,7 @@ public class BDD {
                 num_vertices++;
                 return new Vertex(value);
             }
-            //System.out.println("PETANTE");
+            //System.out.println("WRONG");
             return null;
      }
 
@@ -290,7 +290,7 @@ public class BDD {
             public boolean run(Vertex v, ArrayList<Boolean> args)
             {
                 if(!v.isLeaf()){
-                    if(!args.get(v.index-1))
+                    if(!args.get(v.index))
                         return this.run(v.low, args);
                     else
                         return this.run(v.high, args);
@@ -315,13 +315,7 @@ public class BDD {
     {
         class Traversor{
             public void run(Vertex v, ArrayList<ArrayList<Vertex>> levels)
-            {
-                /*if(v.visited)
-                {
-                    System.out.println("Hemos ciclado");
-                }
-                v.visited = true;*/
-                
+            {   
                 if(!v.isLeaf())
                 {
                     levels.get(v.index).add(v);

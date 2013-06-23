@@ -42,8 +42,10 @@ public class TimeMeasurer {
     public long end(){
         this.endTime = System.nanoTime();
         this.elapsedTime = this.endTime - this.startTime;
-        System.out.println(context+" "+this.getElapsedTimeAsHumanText());
         return this.elapsedTime;
     }
     
+    public void show(){
+        System.out.println(context+" "+this.getElapsedTimeAsHumanText());
+    }
 }
