@@ -169,6 +169,7 @@ public class BDDDimacsLoader {
                         }
                     }
                     System.out.println("-- > " + formulaIndex + " cláusulas de "+ numClausules);
+                    //System.out.println(formulaBDD);
                     // Avanzamos la CNF
                     formulaIndex++;
                     //System.out.println(formulaIndex+"/"+numClausules);

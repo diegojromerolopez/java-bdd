@@ -9,7 +9,7 @@ package bdd;
  * @author diegoj
  */
 public class TimeMeasurer {
-    public final static boolean MEASURE_TIME = false;
+    public final static boolean MEASURE_TIME = true;
     public String context = "";
     public long startTime = 0;
     public  long endTime = 0;

@@ -23,7 +23,7 @@ public class Main {
         BDDDimacsLoader loader = new BDDDimacsLoader(filename);
         BDD bdd = null;
         if(useApplyAlgorithm)
-            bdd = loader.loadFileUsingApplyAlgorithm();
+            bdd = loader.loadFileUsingApplyAlgorithm(15);
         else
             bdd = loader.loadFile();
         System.out.println("Función " + bdd.function);
@@ -48,7 +48,7 @@ public class Main {
         BDDDimacsLoader loader = new BDDDimacsLoader(filename);
         BDD bdd = null;
         if(useApplyAlgorithm)
-            bdd = loader.loadFileUsingApplyAlgorithm(15);
+            bdd = loader.loadFileUsingApplyAlgorithm(5);
         else
             bdd = loader.loadFile();
         //System.out.println("PRINT DIMACS FILE");
